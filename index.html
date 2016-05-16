@@ -1,0 +1,1034 @@
+<html>
+<head>
+    <title>Treasure Miner</title>
+    <link href='https://fonts.googleapis.com/css?family=Orbitron' rel='stylesheet' type='text/css'>
+    <style>
+        html {
+            background: black;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9em;
+        }
+        body { 
+            width: 960px; margin: 0 auto; 
+        }
+        canvas {
+            width: 100%;
+            height: 88%;
+        }
+        .dropdown {
+            float: right;
+            padding-top: 15px;
+            padding-left: 70px;
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 400px;
+            padding-left: 10px;
+            padding-right: 10px;
+            color: black;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        #wrapper {
+            width: 1200px;
+            overflow: hidden;
+        }
+        #first {
+            padding-right: 70px;
+            float: left;
+        }
+        #second {
+            padding-right: 50px;
+            float: left;
+        }
+        #image {
+            padding-left: 20px;
+            padding-right: 70px;
+            float: left;
+        }
+        #energy, #life {
+            padding-right: 5px;
+            float: left;
+        }
+        #energyBar, #lifeBar {
+            padding-top: 16px;
+            padding-right: 50px;
+            float: left;
+        }
+        #back, #backlife {
+            background: red;
+            width: 200px;
+            height: 20px;
+        }
+        #front{
+            background: #00ffff;
+            width: 200px;
+            height: 20px;
+        }
+        #frontlife {
+            background: #00ff00;
+            width: 200px;
+            height: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0f0;
+            box-shadow: inset 0 0 10px #000000;
+            color: black;
+        }
+        button:active {
+            background-color: #0fa;
+        }
+        #pickaxe {
+            margin-right: 15px;
+        }
+        #melee {
+            margin-right: 15px;
+        }
+        #energyBtn {
+            margin-right: 15px;
+        }
+        #lifeBtn {
+            margin-right: 15px;
+        }
+        #buttons {
+            visibility: hidden;
+            position: absolute;
+            bottom: 47%;
+            right: 35%;
+        }
+    </style>
+</head>
+<body>
+    <div class="dropdown">
+      <span>Instructions (Hover over)</span>
+      <div class="dropdown-content">
+        <p>
+            <b>Welcome to Treasure Miner!</b>
+        <br><br>
+            Collect all treasures to progress to the next level.
+        <br><br>
+            Use your pickaxe to forge your path.
+        <br><br>
+            Using your pickaxe takes energy, so be careful!
+        <br><br>
+            Watch out for enemies! They will hurt you!
+        <br><br>
+            <b>Controls:</b>
+            <br>
+            Movement: WASD
+            <br>
+            Pickaxe: Hold WASD against a wall
+            <br>
+            Attack: Spacebar
+        <br>
+        <br>
+        </p>
+      </div>
+    </div>
+    <div id="energy">
+        <p id="energy"><b>Energy:</b></p>
+    </div>
+    <div id="energyBar">
+        <div id="back">
+            <div id="front"></div>
+        </div>
+    </div>
+    <div id="life">
+        <p id="life"><b>Life:</b></p>
+    </div>
+    <div id="lifeBar">
+        <div id="backlife">
+            <div id="frontlife"></div>
+        </div>
+    </div>
+    <div id="wrapper">
+        <div id="first">
+            <p id="gold"><b><img src="assets/images/gold.png"/> 0</b></p>
+        </div>
+        <div id="second">
+            <p id="minerals"><b><img src="assets/images/rock.png"/> 0</b></p>
+        </div>
+    </div>
+    <div id="buttons">
+        <button id="pickaxe" onclick="increasePickaxe()">+1 Pickaxe</button>
+        <button id="melee" onclick="increaseAttack()">+5 Attack</button>
+        <button id="energyBtn" onclick="increaseEnergy()">+10 Energy</button>
+        <button id="lifeBtn" onclick="increaseLife()">+10 Life</button>
+        <br>
+            <div id="image">
+                <p id="gold"><b><img src="assets/images/rock.png"/>75</b></p>
+            </div>
+            <div id="image">
+                <p id="minerals"><b><img src="assets/images/rock.png"/>50</b></p>
+            </div>
+            <div id="image">
+                <p id="gold"><b><img src="assets/images/gold.png"/>250</b></p>
+            </div>
+            <div id="image">
+                <p id="minerals"><b><img src="assets/images/gold.png"/>150</b></p>
+            </div>
+        </div>
+<canvas></canvas>
+</body>
+<script>
+    //constants
+    const w = 19;
+    const rows = 50;
+    const cols = 50;
+    const FPS = 30;
+    //variables
+    let cellCount = 0;
+    let cellArray = [];
+    let nextGeneration = [];
+    let caverns = [];
+    let treasures = [];
+    let treasure = [];
+    let enemies = [];
+    let treasureNum = 0;
+    let level = 0;
+    let gold = 0;
+    let minerals = 0;
+    let damage = 0;
+    let energy = 100;
+    let life = 100;
+    let maxEnergy = 100;
+    let maxLife = 100;
+    let pickaxePower = 1;
+    let attackPower = 10;
+    let energyMultiple = 200/maxEnergy;
+    let lifeMultiple = 200/maxLife;
+    let isDead = false;
+    let damaging = false;
+    let store = false;
+    let displayText = false;
+    let started = false;
+    let doorHasPlayed = false;
+    let deadHasPlayed = false;
+    let winHasPlayed = false;
+    let currentEnemy;
+    let storeText;
+    //audio
+    let bgMusic;
+    let titleMusic;
+    let breakSnd;
+    let coinSnd;
+    let damageSnd;
+    let deadSnd;
+    let doorSnd;
+    let hitSnd;
+    let nopeSnd;
+    let pickaxeSnd;
+    let powerupSnd;
+    let walkSnd;
+    let winSnd;
+
+    const canvas = document.querySelector( 'canvas' );
+    canvas.width = w*cols;
+    canvas.height = w*rows;
+    const ctx = canvas.getContext( '2d' );
+
+    const cell = {
+        draw(i, j, w, color) {
+            ctx.fillStyle = color
+            ctx.fillRect(i*w, j*w, w, w)
+        }
+    };
+    const Tile = Object.create( cell );
+    Object.assign( Tile, {
+        create(name, value, x, y, hp) {
+            const tile = Object.create( this );
+            tile.name = name
+            tile.value = value
+            tile.x = x
+            tile.y = y
+            tile.hp = hp
+            
+            return tile
+        }
+    });
+
+    const player = {
+        draw(x, y, w, color) {
+            ctx.fillStyle = color
+            ctx.fillRect(x, y, w, w)
+        }
+    };
+    const Player = Object.create( player );
+    Object.assign( Player, {
+        create(x, y, hp, value, isDrawn) {
+            const player = Object.create( this );
+            player.x = x
+            player.y = y
+            player.hp
+            player.value = value
+            player.isDrawn = isDrawn
+
+            return player
+        }
+    });
+
+    const hero = Player.create(0, 0, 0, 0, false);
+
+    function drawPlayer(){
+        for(let i = 0; i < cols; i++){
+            for(let j = 0; j < rows; j++){
+                if(cellArray[i][j].value == 0){
+                    hero.x = cellArray[i][j].x;
+                    hero.y = cellArray[i][j].y;
+                    hero.draw(hero.x, hero.y, w, "blue");
+                    hero.isDrawn = true;
+                    return;
+                }
+            }
+        }
+    }
+
+    function drawLevel(){
+        //create cell array, next generation array, cavern, enemy, and treasure array    
+        for (let i = 0; i < rows; i++){
+            cellArray[i] = [];
+            nextGeneration[i] = [];
+            caverns[i] = [];
+            treasures[i] = [];
+            enemies[i] = [];
+        }
+
+        let count = 0;
+        for(let x = 0; x < cols; x++) {
+            for(let y = 0; y < rows; y++) {
+                const num = Math.round(Math.random()*1);
+                const temp = Math.round(Math.random()*100);
+                const rand = Math.round(Math.random()*150);
+                count++;
+                //assign initial value of each cell in cellArray with either 0 or 1
+                cellArray[x][y] = Tile.create(`tile${count}`, num, 0, 0, 3);
+                //assign initial value of each cell in nextGeneration to 0 by default 
+                nextGeneration[x][y] = Tile.create(`tile${count}`, 0, 0, 0, 3);
+                //make a copy of cellArray to identify caverns
+                caverns[x][y] = Tile.create(`tile${count}`, 0, 0, 0, 3);
+                //assign treasures a random value
+                treasures[x][y] = Tile.create(`treasure${count}`, temp, 0, 0, 3);
+                //assign enemies a random value
+                enemies[x][y] = Player.create(0, 0, 10, rand, false);
+            }
+        }
+
+        //identify neighbors of each cell
+        for (let x = 1; x < cols-1; x++) {
+            for (let y = 1; y < rows-1; y++) {
+                let neighbors = 0;
+                for (let i = -1; i <= 1; i++) {
+                    for (let j = -1; j <= 1; j++) {
+                        neighbors += cellArray[x+i][y+j].value;
+                    }
+                }
+
+                neighbors -= cellArray[x][y].value;
+
+                if ((cellArray[x][y].value == 1) && (neighbors < 3))
+                    nextGeneration[x][y].value = 0;
+                else if ((cellArray[x][y].value == 0) && (neighbors > 4))
+                    nextGeneration[x][y].value = 1;
+                else nextGeneration[x][y] = cellArray[x][y];          
+            }
+        }
+
+        //previous cellArray equals the new generation    
+        cellArray = nextGeneration;
+
+        //make walls on all 4 sides    
+        for(let i = 0; i < cols; i++){
+            for(let j = 0; j < rows; j++){
+                //make the walls a unique value so they will not be destroyed
+                cellArray[i][0].value = 2;
+                cellArray[0][j].value = 2;
+                cellArray[i][cols-1].value = 2;
+                cellArray[rows-1][j].value = 2;
+            }
+        }
+
+        //draw tiles   
+        for(let i = 0; i < cols; i++){
+            for(let j = 0; j < rows; j++){
+                if(cellArray[i][j].value == 1 || cellArray[i][j].value == 2){
+                    cellArray[i][j].draw(i, j, w, "#674D40");
+                    cellArray[i][j].x = i*w;
+                    cellArray[i][j].y = j*w;
+                }else{
+                    cellArray[i][j].draw(i, j, w, "#995E4F");
+                    cellArray[i][j].x = i*w;
+                    cellArray[i][j].y = j*w;
+                }
+            }
+        }
+        
+        //draw treasures
+        for(let i = 0; i < cols; i++){
+            for(let j = 0; j < rows; j++){
+                if(cellArray[i][j].value != 1 && cellArray[i][j].value != 2){
+                    if(treasures[i][j].value == 0){
+                        treasures[i][j].draw(i, j, w, "#ff0")
+                        treasures[i][j].x = i*w
+                        treasures[i][j].y = j*w
+                        treasure[treasureNum] = "hi";
+                        treasureNum++;
+                    }
+                }
+            }
+        }
+        //draw enemies
+        for(let i = 0; i < cols; i++){
+            for(let j = 0; j < rows; j++){
+                if(cellArray[i][j].value == 0){
+                    if(enemies[i][j].value == 0){
+                        enemies[i][j].x = cellArray[i][j].x;
+                        enemies[i][j].y = cellArray[i][j].y;
+                        enemies[i][j].hp = 10;
+                        enemies[i][j].draw(enemies[i][j].x, enemies[i][j].y, w, "red");
+                        enemies[i][j].isDrawn = true;
+                    }
+                }
+            }
+        }
+    }
+
+    function floodFill(){
+        for(let x = 0; x < cols; x++){
+            for(let y = 0; y < rows; y++){
+                if(cellArray[x][y].value == 0){
+                    if(cellArray[x][y-1].value == 0)
+                        cellArray[x][y-1].vaue == 0;
+                    else if(cellArray[x][y+1].value == 0)
+                        cellArray[x][y+1].value = 0;
+                    else if(cellArray[x-1][y].value == 0)
+                        cellArray[x-1][y].value = 0;
+                    else if(cellArray[x+1][y].value == 0)
+                        cellArray[x+1][y].value = 0;
+                }
+            }
+        }
+    }
+    
+    function increasePickaxe(){
+        if(minerals >= 75){
+            powerupSnd.play();
+            pickaxePower++;
+            minerals -= 75;
+            document.getElementById("minerals").innerHTML = `<b><img src="assets/images/rock.png"/> ${minerals}</b>`;
+            storeText = "Pickaxe Power increased";
+            displayText = true;
+        } else if(minerals < 75){
+            nopeSnd.play();
+            storeText = "Not enough minerals";
+            displayText = true;
+        }
+    }
+    function increaseAttack(){
+        if(minerals >= 50){
+            powerupSnd.play();
+            attackPower += 5;
+            minerals -= 50;
+            document.getElementById("minerals").innerHTML = `<b><img src="assets/images/rock.png"/> ${minerals}</b>`;
+            storeText = "Attack Power increased";
+            displayText = true;
+        } else if(minerals < 50){
+            nopeSnd.play();
+            storeText = "Not enough minerals";
+            displayText = true;
+        }
+    }
+    function increaseEnergy(){
+        if(gold >= 250){
+            powerupSnd.play();
+            maxEnergy += 10;
+            gold -= 250;
+            document.getElementById("gold").innerHTML = `<b><img src="assets/images/gold.png"/> ${gold}</b>`;
+            storeText = "Energy increased";
+            displayText = true;
+        } else if(gold < 250){
+            nopeSnd.play();
+            storeText = "Not enough gold";
+            displayText = true;
+        }
+    }
+    function increaseLife(){
+        if(gold >= 150){
+            powerupSnd.play();
+            maxLife += 10;
+            gold -= 150;
+            document.getElementById("gold").innerHTML = `<b><img src="assets/images/gold.png"/> ${gold}</b>`;
+            storeText = "Life increased";
+            displayText = true;
+        } else if(gold < 150){
+            nopeSnd.play();
+            storeText = "Not enough gold";
+            displayText = true;
+        }
+    }
+    
+    function loadAudio(){
+        bgMusic = new Audio("assets/audio/bgMusic.mp3");
+        titleMusic = new Audio("assets/audio/titleMusic.mp3");
+        breakSnd = new Audio("assets/audio/break.wav");
+        coinSnd = new Audio("assets/audio/coin.wav");
+        damageSnd = new Audio("assets/audio/damage.wav");
+        deadSnd = new Audio("assets/audio/dead.wav");
+        doorSnd = new Audio("assets/audio/door.wav");
+        hitSnd = new Audio("assets/audio/hit.wav");
+        nopeSnd = new Audio("assets/audio/nope.wav");
+        pickaxeSnd = new Audio("assets/audio/pickaxe.wav");
+        powerupSnd = new Audio("assets/audio/powerup.wav");
+        walkSnd = new Audio("assets/audio/walk.wav");
+        winSnd = new Audio("assets/audio/win.wav");
+    }
+
+    function update(){
+        for(let i = 0; i < cols; i++){
+            for(let j = 0; j < rows; j++){
+                //check if player has stepped on a cell with a treasure
+                if(((hero.x == treasures[i][j].x) && (hero.y == treasures[i][j].y)) && (treasures[i][j].value == 0)){
+                    coinSnd.play();
+                    const num = Math.round(Math.random()*50);
+                    treasures[i][j].value = 10;
+                    gold += num;
+                    document.getElementById("gold").innerHTML = `<b><img src="assets/images/gold.png"/> ${gold}</b>`;
+                    treasure.pop();
+                }
+                //if all treasures are collected, make door appear
+                if(treasure.length == 0){
+                    if(!doorHasPlayed)
+                        doorSnd.play();
+                    doorHasPlayed = true;
+                    cellArray[cellArray.length-2][cellArray.length-2].draw(cellArray.length-2, cellArray.length-2, w, "#000");
+                    cellArray[cellArray.length-2][cellArray.length-2].x = (cellArray.length-2)*w;
+                    cellArray[cellArray.length-2][cellArray.length-2].y = (cellArray.length-2)*w;
+                    cellArray[cellArray.length-2][cellArray.length-2].value = 0;
+                    
+                    //go to store at end of level
+                    if((hero.x == cellArray[cellArray.length-2][cellArray.length-2].x) && (hero.y == cellArray[cellArray.length-2][cellArray.length-2].y)){
+                        if(!winHasPlayed)
+                            winSnd.play();
+                        winHasPlayed = true;
+                        store = true;
+                    }
+                }
+                //display store text
+                if(displayText){
+                    ctx.fillStyle = "#0f0";
+                    ctx.font = "30px Orbitron";
+                    ctx.fillText(storeText,canvas.width/2-260,canvas.height/2+50);
+                    setTimeout(() => {
+                        displayText = false;
+                    },1000);
+                }
+                //if damaging, display damage text
+                if(damaging){
+                    ctx.fillStyle = "#b30000";
+                    ctx.font = "30px Times New Roman";
+                    ctx.fillText(damage, currentEnemy.x, currentEnemy.y-10);
+                }
+                //check if enemy is dead
+                if(enemies[i][j].hp <= 0){
+                    enemies[i][j].isDrawn = false;
+                }
+            }
+        }
+        //store
+        if(store){
+            document.getElementById("buttons").style.visibility = "visible";
+            ctx.globalAlpha = 0.5;
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.globalAlpha = 1.0;
+            ctx.fillStyle = "#f00";
+            ctx.font = "30px Orbitron";
+            ctx.fillText("Store",canvas.width/2-260,canvas.height/2-150);
+            ctx.fillText("Press Spacebar to Continue.",canvas.width/2-260,canvas.height/2+100);
+        }
+        //player out of energy
+        if(energy <= 0){
+            bgMusic.pause();
+            if(!deadHasPlayed)
+                deadSnd.play();
+            deadHasPlayed = true;
+            isDead = true;
+            ctx.globalAlpha = 0.5;
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.globalAlpha = 1.0;
+            ctx.fillStyle = "#f00";
+            ctx.font = "30px Orbitron";
+            ctx.fillText("You ran out of energy!",canvas.width/2-260,canvas.height/2-100);
+            if(level == 1){
+                ctx.fillText(`You made it through ${level} level.`,canvas.width/2-260,canvas.height/2);
+            }else{
+                ctx.fillText(`You made it through ${level} levels.`,canvas.width/2-260,canvas.height/2);
+            }
+            ctx.fillText("Press Enter to Restart.",canvas.width/2-260,canvas.height/2+100);
+        }
+        //player dead
+        if(life <= 0){
+            bgMusic.pause();
+            if(!deadHasPlayed)
+                deadSnd.play();
+            deadHasPlayed = true;
+            isDead = true;
+            ctx.globalAlpha = 0.5;
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.globalAlpha = 1.0;
+            ctx.fillStyle = "#f00";
+            ctx.font = "30px Orbitron";
+            ctx.fillText("You died!",canvas.width/2-260,canvas.height/2-100);
+            if(level == 1){
+                ctx.fillText(`You made it through ${level} level.`,canvas.width/2-260,canvas.height/2);
+            }else{
+                ctx.fillText(`You made it through ${level} levels.`,canvas.width/2-260,canvas.height/2);
+            }
+            ctx.fillText("Press Enter to Restart.",canvas.width/2-260,canvas.height/2+100);
+        }
+    }
+
+    function draw(){
+        //clear canvas for redraw
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        //draw level
+        for(let i = 0; i < cols; i++){
+            for(let j = 0; j < rows; j++){
+                if(cellArray[i][j].value == 1 || cellArray[i][j].value == 2){
+                    cellArray[i][j].draw(i, j, w, "#674D40");
+                    cellArray[i][j].x = i*w;
+                    cellArray[i][j].y = j*w;
+                }else{
+                    cellArray[i][j].draw(i, j, w, "#995E4F");
+                    cellArray[i][j].x = i*w;
+                    cellArray[i][j].y = j*w;
+                }
+            }
+        }
+        //draw treasures
+        for(let i = 0; i < cols; i++){
+            for(let j = 0; j < rows; j++){
+                if(cellArray[i][j].value != 1 && cellArray[i][j].value != 2){
+                    if(treasures[i][j].value == 0){
+                        treasures[i][j].draw(i, j, w, "#ff0")
+                        treasures[i][j].x = i*w
+                        treasures[i][j].y = j*w
+                    }
+                }
+            }
+        }
+        //draw enemies
+        for(let i = 0; i < cols; i++){
+            for(let j = 0; j < rows; j++){
+                if(cellArray[i][j].value == 0){
+                    if(enemies[i][j].isDrawn){
+                        enemies[i][j].draw(enemies[i][j].x, enemies[i][j].y, w, "red");
+                    }
+                }
+            }
+        }
+        //draw hero and update position
+        hero.draw(hero.x, hero.y, w, "blue");       
+    }
+
+    loadAudio();
+    if(!started){
+        titleMusic.loop = true;
+        document.body.appendChild(titleMusic);
+        titleMusic.play();
+        for (let i  = 0; i < rows; i++){
+            cellArray[i] = [];
+        }
+
+        for(let x = 0; x < cols; x++) {
+            for(let y = 0; y < rows; y++) {
+                let num = Math.round(Math.random()*1);
+                cellArray[x][y] = num;
+            }
+        }
+
+        for(let x = 0; x < cellArray.length; x++) {
+            for(let y = 0; y < cellArray[x].length; y++) {
+                if(Math.log(Math.random()*10) < 0.5) {
+                    cellArray[x][y]=1;
+                }
+            }
+        }
+
+        for (let i  = 0; i < rows; i++){
+            nextGeneration[i] = [];
+        }
+
+        setInterval(() => {
+            if(!started){
+                for (let x = 1; x < cols-1; x++) {
+                    for (let y = 1; y < rows-1; y++) {
+                        let neighbors = 0;
+                        for (let i = -1; i <= 1; i++) {
+                            for (let j = -1; j <= 1; j++) {
+                                neighbors += cellArray[x+i][y+j];
+                            }
+                        }
+
+                        neighbors -= cellArray[x][y];
+
+                        if ((cellArray[x][y] == 1) && (neighbors < 2))
+                            nextGeneration[x][y] = 0;
+                        else if ((cellArray[x][y] == 1) && (neighbors > 3))
+                            nextGeneration[x][y] = 0;
+                        else if ((cellArray[x][y] == 0) && (neighbors == 3))
+                            nextGeneration[x][y] = 1;
+                        else nextGeneration[x][y] = cellArray[x][y];
+                    }
+                }
+
+                cellArray = nextGeneration;
+
+                for(let i = 0; i < cols; i++){
+                    for(let j = 0; j < rows; j++){
+                        if((cellArray[i][j] == 1)){
+                            ctx.fillStyle = "#674D40"
+                            ctx.fillRect(i*w, j*w, w, w)
+                        }else{
+                            ctx.fillStyle = "#995E4F"
+                            ctx.fillRect(i*w, j*w, w, w)
+                        }
+                    }
+                }
+
+                ctx.globalAlpha = 0.5;
+                ctx.fillStyle = "#000";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.globalAlpha = 1.0;
+                ctx.fillStyle = "#f00";
+                ctx.font = "61px Orbitron";
+                ctx.fillText("Treasure Miner",canvas.width/2-250,canvas.height/2-100);
+                ctx.font = "30px Orbitron";
+                ctx.fillText("Procedural level generation",canvas.width/2-225,canvas.height/2-20);
+                ctx.fillText("using cellular automata",canvas.width/2-190,canvas.height/2+25);
+                ctx.fillText("Press Enter to Begin",canvas.width/2-170,canvas.height/2+100);
+            }
+        },100)
+    }
+    
+    //energy "timer"
+    setInterval(() => {
+      if(started){
+          if(!isDead && !store){
+              if(energy > 0){
+                  energy -= 0.5;
+                  document.getElementById("front").style.width = `${energy*energyMultiple}px`;
+              }
+          }
+      }
+    }, 1000);
+
+    //run update and draw at the frame rate
+    setInterval(() => {
+      if(started){
+          draw();
+          update();
+      }
+    }, 1000/FPS);
+
+    const Key = {
+        _pressed: {},
+
+        LEFT: 37,
+        UP: 38,
+        RIGHT: 39,
+        DOWN: 40,
+
+        isDown(keyCode) {
+            return this._pressed[keyCode];
+        },
+
+        onKeydown(event) {
+            this._pressed[event.keyCode] = true;
+       },
+
+        onKeyup(event) {
+            delete this._pressed[event.keyCode];
+        }
+    };
+
+    document.addEventListener('keydown', event => {
+        //press eneter to start the game
+        if(event.keyCode == 13 && !started){
+            titleMusic.pause();
+            bgMusic.loop = true;
+            document.body.appendChild(bgMusic);
+            bgMusic.volume = 0.35;
+            bgMusic.play();
+            started = true;
+            drawLevel();
+            drawPlayer();
+            floodFill();
+            isDead = false;
+            cellArray = [];
+            nextGeneration = [];
+            caverns = [];
+            treasures = [];
+            treasure = [];
+            treasureNum = 0;
+            level = 0;
+            gold = 0;
+            minerals = 0;
+            drawLevel();
+            drawPlayer();
+            energy = 100;
+            life = 100;
+            maxLife = 100;
+            maxEnergy = 100;
+            pickaxePower = 1;
+            attackPower = 10;
+            energyMultiple = 200/maxEnergy;
+            lifeMultiple = 200/maxLife;
+            document.getElementById("front").style.width = `${energy*energyMultiple}px`;
+            document.getElementById("frontlife").style.width = `${life*lifeMultiple}px`;
+            document.getElementById("minerals").innerHTML = `<b><img src="assets/images/rock.png"/> ${minerals}</b>`;
+            document.getElementById("gold").innerHTML = `<b><img src="assets/images/gold.png"/> ${gold}</b>`;
+        }
+        //press enter to restart when dead
+        if (event.keyCode == 13 && isDead){
+            bgMusic.play();
+            isDead = false;
+            doorHasPlayed = false;
+            deadHasPlayed = false;
+            winHasPlayed = false;
+            cellArray = [];
+            nextGeneration = [];
+            caverns = [];
+            treasures = [];
+            treasure = [];
+            treasureNum = 0;
+            level = 0;
+            gold = 0;
+            minerals = 0;
+            drawLevel();
+            drawPlayer();
+            energy = 100;
+            life = 100;
+            maxLife = 100;
+            maxEnergy = 100;
+            pickaxePower = 1;
+            attackPower = 10;
+            energyMultiple = 200/maxEnergy;
+            lifeMultiple = 200/maxLife;
+            document.getElementById("front").style.width = `${energy*energyMultiple}px`;
+            document.getElementById("frontlife").style.width = `${life*lifeMultiple}px`;
+            document.getElementById("minerals").innerHTML = `<b><img src="assets/images/rock.png"/> ${minerals}</b>`;
+            document.getElementById("gold").innerHTML = `<b><img src="assets/images/gold.png"/> ${gold}</b>`;
+        }
+        //press spacebar to go to next level
+        if (event.keyCode == 32 && store){
+            level++;
+            document.getElementById("buttons").style.visibility = "hidden";
+            storeText = "";
+            displayText = false;
+            store = false;
+            doorHasPlayed = false;
+            deadHasPlayed = false;
+            winHasPlayed = false;
+            cellArray = [];
+            nextGeneration = [];
+            caverns = [];
+            treasures = [];
+            treasure = [];
+            treasureNum = 0;
+            drawLevel();
+            drawPlayer();
+            energy = maxEnergy;
+            life = maxLife;
+            energyMultiple = 200/maxEnergy;
+            lifeMultiple = 200/maxLife;
+            document.getElementById("front").style.width = `${energy*energyMultiple}px`;
+            document.getElementById("frontlife").style.width = `${life*lifeMultiple}px`;
+        }
+        if(!isDead && !store){
+            //enemy movement
+            for(let i = 0; i < cols; i++){
+                for(let j = 0; j < rows; j++){
+                    if(event.keyCode == 65 || event.keyCode == 68 || event.keyCode == 87 || event.keyCode == 83) {
+                        if(enemies[i][j].isDrawn){
+                            //move left
+                            if(hero.x < enemies[i][j].x && cellArray[(enemies[i][j].x/w)-1][(enemies[i][j].y/w)].value == 0) {
+                                enemies[i][j].x -= w;
+                            }
+                            //move right
+                            if(hero.x > enemies[i][j].x && cellArray[(enemies[i][j].x/w)+1][(enemies[i][j].y/w)].value == 0) {
+                                enemies[i][j].x += w;
+                            }
+                            //move up
+                            if(hero.y < enemies[i][j].y && cellArray[(enemies[i][j].x/w)][(enemies[i][j].y/w)-1].value == 0) {
+                                enemies[i][j].y -= w;
+                            }
+                            //move down
+                            if(hero.y > enemies[i][j].y && cellArray[(enemies[i][j].x/w)][(enemies[i][j].y/w)+1].value == 0) {
+                                enemies[i][j].y += w;
+                            }
+                        }
+                    }
+                }
+            }
+            //check if hero is on same tile or one away from enemy to damage player
+            for(let i = 0; i < cols; i++){
+                for(let j = 0; j < rows; j++){
+                    if(enemies[i][j].isDrawn){
+                        if((hero.x == enemies[i][j].x && hero.y == enemies[i][j].y) || (cellArray[(hero.x/w)-1][(hero.y/w)].x == enemies[i][j].x && cellArray[(hero.x/w)-1][(hero.y/w)].y == enemies[i][j].y) || (cellArray[(hero.x/w)+1][(hero.y/w)].x == enemies[i][j].x && cellArray[(hero.x/w)+1][(hero.y/w)].y == enemies[i][j].y) || (cellArray[(hero.x/w)][(hero.y/w)-1].x == enemies[i][j].x && cellArray[(hero.x/w)][(hero.y/w)-1].y == enemies[i][j].y) || (cellArray[(hero.x/w)][(hero.y/w)+1].x == enemies[i][j].x && cellArray[(hero.x/w)][(hero.y/w)+1].y == enemies[i][j].y)){
+                            damageSnd.play();
+                            life -= Math.round(Math.random()*5);
+                            document.getElementById("frontlife").style.width = `${life*lifeMultiple}px`;
+                        }
+                    }
+                }
+            }
+            //check if hero is on same tile or one away from enemy to hurt enemies
+            for(let i = 0; i < cols; i++){
+                for(let j = 0; j < rows; j++){
+                    if(event.keyCode == 32){
+                        if((hero.x == enemies[i][j].x && hero.y == enemies[i][j].y) || (cellArray[(hero.x/w)-1][(hero.y/w)].x == enemies[i][j].x && cellArray[(hero.x/w)-1][(hero.y/w)].y == enemies[i][j].y) || (cellArray[(hero.x/w)+1][(hero.y/w)].x == enemies[i][j].x && cellArray[(hero.x/w)+1][(hero.y/w)].y == enemies[i][j].y) || (cellArray[(hero.x/w)][(hero.y/w)-1].x == enemies[i][j].x && cellArray[(hero.x/w)][(hero.y/w)-1].y == enemies[i][j].y) || (cellArray[(hero.x/w)][(hero.y/w)+1].x == enemies[i][j].x && cellArray[(hero.x/w)][(hero.y/w)+1].y == enemies[i][j].y)){
+                            if(enemies[i][j].isDrawn && enemies[i][j].hp > 0){
+                                hitSnd.play();
+                                damage = Math.round(Math.random()*attackPower);
+                                enemies[i][j].hp -= damage;
+                                currentEnemy = enemies[i][j];
+                                damaging = true;
+                                setTimeout(() => {
+                                    damaging = false;
+                                }, 250);
+                            }
+                        }
+                    }
+                }
+            }
+            //enemy break walls
+            for(let i = 0; i < cols; i++){
+                for(let j = 0; j < rows; j++){
+                    if(enemies[i][j].isDrawn){
+                        if (event.keyCode == 65 && cellArray[(enemies[i][j].x/w)-1][(enemies[i][j].y/w)].value == 1) {
+                            if(cellArray[(enemies[i][j].x/w)-1][(enemies[i][j].y/w)].hp > 0)
+                                cellArray[(enemies[i][j].x/w)-1][(enemies[i][j].y/w)].hp -= 1;
+                            else {
+                                cellArray[(enemies[i][j].x/w)-1][(enemies[i][j].y/w)].value = 0;
+                            }
+                        }
+                        if (event.keyCode == 68 && cellArray[(enemies[i][j].x/w)+1][(enemies[i][j].y/w)].value == 1) {
+                            if(cellArray[(enemies[i][j].x/w)+1][(enemies[i][j].y/w)].hp > 0)
+                                cellArray[(enemies[i][j].x/w)+1][(enemies[i][j].y/w)].hp -= 1;
+                            else {
+                                cellArray[(enemies[i][j].x/w)+1][(enemies[i][j].y/w)].value = 0;
+                            }
+                        }
+                        if (event.keyCode == 87 && cellArray[(enemies[i][j].x/w)][(enemies[i][j].y/w)-1].value == 1) {
+                            if(cellArray[(enemies[i][j].x/w)][(enemies[i][j].y/w)-1].hp > 0)
+                                cellArray[(enemies[i][j].x/w)][(enemies[i][j].y/w)-1].hp -= 1;
+                            else {
+                                cellArray[(enemies[i][j].x/w)][(enemies[i][j].y/w)-1].value = 0;
+                            }
+                        }
+                        if (event.keyCode == 83 && cellArray[(enemies[i][j].x/w)][(enemies[i][j].y/w)+1].value == 1) {
+                            if(cellArray[(enemies[i][j].x/w)][(enemies[i][j].y/w)+1].hp > 0)
+                                cellArray[(enemies[i][j].x/w)][(enemies[i][j].y/w)+1].hp -= 1;
+                            else {
+                                cellArray[(enemies[i][j].x/w)][(enemies[i][j].y/w)+1].value = 0;
+                            }
+                        }
+                    }
+                }
+            }
+            //move left
+            if (event.keyCode == 65 && cellArray[(hero.x/w)-1][(hero.y/w)].value == 0) {
+                walkSnd.play();
+                hero.x -= w;
+            }
+            //move right
+            if (event.keyCode == 68 && cellArray[(hero.x/w)+1][(hero.y/w)].value == 0) {
+                walkSnd.play();
+                hero.x += w;
+            }
+            //move up
+            if (event.keyCode == 87 && cellArray[(hero.x/w)][(hero.y/w)-1].value == 0) {
+                walkSnd.play();
+                hero.y -= w; 
+            }
+            //move down
+            if (event.keyCode == 83 && cellArray[(hero.x/w)][(hero.y/w)+1].value == 0) {
+                walkSnd.play();
+                hero.y += w;
+            }
+            //break walls
+            if (event.keyCode == 65 && cellArray[(hero.x/w)-1][(hero.y/w)].value == 1) {
+                if(cellArray[(hero.x/w)-1][(hero.y/w)].hp > 0){
+                    pickaxeSnd.play();
+                    cellArray[(hero.x/w)-1][(hero.y/w)].hp -= pickaxePower;
+                } else {
+                    breakSnd.play();
+                    cellArray[(hero.x/w)-1][(hero.y/w)].value = 0;
+                    minerals++;
+                    document.getElementById("minerals").innerHTML = `<b><img src="assets/images/rock.png"/> ${minerals}</b>`;
+                    energy-=2;
+                    document.getElementById("front").style.width = `${energy*energyMultiple}px`;
+                }
+            }
+            if (event.keyCode == 68 && cellArray[(hero.x/w)+1][(hero.y/w)].value == 1) {
+                if(cellArray[(hero.x/w)+1][(hero.y/w)].hp > 0){
+                    pickaxeSnd.play();
+                    cellArray[(hero.x/w)+1][(hero.y/w)].hp -= pickaxePower;
+                } else {
+                    breakSnd.play();
+                    cellArray[(hero.x/w)+1][(hero.y/w)].value = 0;
+                    minerals++;
+                    document.getElementById("minerals").innerHTML = `<b><img src="assets/images/rock.png"/> ${minerals}</b>`;
+                    energy-=2;
+                    document.getElementById("front").style.width = `${energy*energyMultiple}px`;
+                }
+            }
+            if (event.keyCode == 87 && cellArray[(hero.x/w)][(hero.y/w)-1].value == 1) {
+                if(cellArray[(hero.x/w)][(hero.y/w)-1].hp > 0){
+                    pickaxeSnd.play();
+                    cellArray[(hero.x/w)][(hero.y/w)-1].hp -= pickaxePower;
+                } else {
+                    breakSnd.play();
+                    cellArray[(hero.x/w)][(hero.y/w)-1].value = 0;
+                    minerals++;
+                    document.getElementById("minerals").innerHTML = `<b><img src="assets/images/rock.png"/> ${minerals}</b>`;
+                    energy-=2;
+                    document.getElementById("front").style.width = `${energy*energyMultiple}px`;
+                }
+            }
+            if (event.keyCode == 83 && cellArray[(hero.x/w)][(hero.y/w)+1].value == 1) {
+                if(cellArray[(hero.x/w)][(hero.y/w)+1].hp > 0){
+                    pickaxeSnd.play();
+                    cellArray[(hero.x/w)][(hero.y/w)+1].hp -= pickaxePower;
+                } else {
+                    breakSnd.play();
+                    cellArray[(hero.x/w)][(hero.y/w)+1].value = 0;
+                    minerals++;
+                    document.getElementById("minerals").innerHTML = `<b><img src="assets/images/rock.png"/> ${minerals}</b>`;
+                    energy-=2;
+                    document.getElementById("front").style.width = `${energy*energyMultiple}px`;
+                }
+            }
+        }
+    }, true);
+</script>
+</html>
